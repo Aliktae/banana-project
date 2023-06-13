@@ -36,31 +36,25 @@ func InitAuthService(svcURL string, handler db.DBHandler) (*Service, error) {
 }
 
 type LoginReqBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string json:"email"
+	Password string json:"password"
 }
 
 type SignUpReqBody struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string json:"username"
+	Email    string json:"email"
+	Password string json:"password"
 }
 
 func (s *Service) Login(c *gin.Context, req *pb.LoginRequest) (*pb.AuthResponse, error) {
-	b := LoginReqBody{}
 
-	if err := c.BindJSON(&b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return nil, errors.New("invalid request body")
-	}
-
-	found, err := GetUserByEmail(b.Email, s.Handler)
+	found, err := GetUserByEmail(req.Email, s.Handler)
 	if err != nil && found == nil {
 		c.AbortWithError(http.StatusNotFound, err)
 		return nil, errors.New("such user was not found")
 	}
 
-	if !utils.ComparePasswords(found.Password, b.Password) {
+	if !utils.ComparePasswords(found.Password, req.Password) {
 		c.AbortWithError(http.StatusUnauthorized, errors.New("incorrect password"))
 		return nil, errors.New("incorrect password")
 	}
@@ -81,23 +75,17 @@ func (s *Service) Login(c *gin.Context, req *pb.LoginRequest) (*pb.AuthResponse,
 }
 
 func (s *Service) SignUp(c *gin.Context, req *pb.RegisterRequest) (*pb.AuthResponse, error) {
-	b := SignUpReqBody{}
 
-	if err := c.BindJSON(&b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return nil, errors.New("invalid request body")
-	}
-
-	found, err := GetUserByEmail(b.Email, s.Handler)
+	found, err := GetUserByEmail(req.Email, s.Handler)
 	if err == nil && found != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return nil, errors.New("user already exists")
 	}
 
 	newUser := models.User{
-		Username: b.Username,
-		Email:    b.Email,
-		Password: b.Password,
+		Username: req.Username,
+		Email:    req.Email,
+		Password: req.Password,
 	}
 
 	created, err := CreateUser(&newUser, &s.Handler)
@@ -106,7 +94,7 @@ func (s *Service) SignUp(c *gin.Context, req *pb.RegisterRequest) (*pb.AuthRespo
 		return nil, errors.New("could not create an account")
 	}
 
-	token, err := utils.GenerateToken(*found, config.JWTSecretKey)
+	token, err := utils.GenerateToken(*created, config.JWTSecretKey)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return nil, errors.New("apologies for inconvenience, some error occurred")
