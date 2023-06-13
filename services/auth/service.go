@@ -36,18 +36,17 @@ func InitAuthService(svcURL string, handler db.DBHandler) (*Service, error) {
 }
 
 type LoginReqBody struct {
-	Email    string json:"email"
-	Password string json:"password"
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type SignUpReqBody struct {
-	Username string json:"username"
-	Email    string json:"email"
-	Password string json:"password"
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (s *Service) Login(c *gin.Context, req *pb.LoginRequest) (*pb.AuthResponse, error) {
-
 	found, err := GetUserByEmail(req.Email, s.Handler)
 	if err != nil && found == nil {
 		c.AbortWithError(http.StatusNotFound, err)
